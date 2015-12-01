@@ -1,0 +1,218 @@
+#compdef pip pip2 pip-2.7 pip3 pip-3.2 pip-3.3 pip-3.4
+#autoload
+
+# pip zsh completion, based on oh-my-zsh completion
+
+zstyle -s ':prezto:module:pip' cache-file 'ZSH_PIP_CACHE_FILE' \
+    || ZSH_PIP_CACHE_FILE=~/.pip/zsh-cache
+
+zstyle -a ':prezto:module:pip' indexes 'ZSH_PIP_INDEXES' \
+    || ZSH_PIP_INDEXES=(https://pypi.python.org/simple/)
+
+_pip(){
+    local -a _1st_arguments
+    _1st_arguments=(
+    'install:install packages'
+    'uninstall:uninstall packages'
+    'freeze:output installed packages in requirements format'
+    'list:list installed packages'
+    'show:show information about installed packages'
+    'search:search PyPI for packages'
+    'wheel:build wheels from your requirements'
+    'help:show available commands'
+    )
+
+    local -a package_index_args
+    package_index_args=(
+    '(-i --index-url)'{-i,--index-url=}'[Base URL of Python Package Index]::'
+    '(--extra-index-url)--extra-index-url=[Extra URLs of package indexes to use in addition to --index-url]::'
+    '(--no-index)--no-index[Ignore package index]'
+    '(-f --find-links)'{-f,--find-links=}'[URL for finding packages]::'
+    '(--allow-external)--allow-external=[Allow the installation of externally hosted files]::'
+    '(--allow-all-external)--allow-all-external[Allow the installation of all externally hosted files]'
+    '(--allow-unverified)--allow-unverified=[Allow the installation of insecure and unverifiable files]::'
+    '(--process-dependency-links)--process-dependency-links[Enable processing of dependency links]'
+    )
+
+    local -a general_args
+    general_args=(
+        '(-h --help)'{-h,--help}'[show help]'
+        '(--isolated)--isolated[Run pip in an isolated mode]'
+        '(-v --verbose)'{-v,--verbose}'[give more output]'
+        '(-V --version)'{-V,--version}'[show version number of program and exit]'
+        '(-q --quiet)'{-q,--quiet}'[give less output]'
+        '(--log)--log[Path to a verbose appending log]::_files'
+        '(--proxy)--proxy=[proxy in form user:passwd@proxy.server:port]::'
+        '(--retries)--retries=[Max number of retries each connection should attempt]'
+        '(--timeout)--timeout=[socket timeout (default 15s)]'
+        '(--exists-action)--exists-action=[Default action when a path already exists: (s)witch, (i)gnore, (w)ipe, (b)ackup]:action:(s i w b)'
+        '(--trusted-host)--trusted-host[Mark this host as trusted, even though it does not have valid or any HTTPS.]'
+        '(--cert)--cert[Path to alrearnate CA bundle]::_files'
+        '(--client-cert)--client-cert[Path to SSL client cert]::_files'
+        '(--cache-dir)--cache-dir[Store the cache data in <dir>]::_files -/'
+        '(--no-cache-dir)--no-cache-dir[Disable the cache]'
+        '(--disable-pip-version-check)--disable-pip-version-check[Do not periodically check PyPI for new version of pip]'
+    )
+
+    local expl
+    local -a all_pkgs installed_pkgs
+
+    _arguments \
+        $general_args \
+        '*:: :->subcmds' && return 0
+
+    if (( CURRENT == 1 )); then
+        _describe -t commands "pip subcommand" _1st_arguments
+        return
+    fi
+
+    case "$words[1]" in
+        install)
+            _arguments \
+                '(-e --editable)'{-e,--editable}'[path of or url to source to link to instead of installing.]: :_files -/'\
+                '(-r --requirement)'{-r,--requirement}'[Requirements file for packages to install]:File:_files' \
+                '(-b --build)'{-b,--build}'[Directory to unpack packages into and build in]: :_files -/'\
+                '(-t --target)'{-t,--target}'[Install packages into <dir>.]: :_files -/'\
+                '(-d --download)'{-d,--download}'[Download packages into <dir> instead of installing them]: :_files -/'\
+                '(--src)--src[Directory to check out editable projects into]: :_files -/'\
+                '(-U --upgrade)'{-U,--upgrade}'[upgrade all packages to the newest available version]' \
+                '(--force-reinstall)--force-reinstall[When upgrading, reinstall all packages even if they are already up-to-date]' \
+                '(-I --ignore-reinstalled)'{-I,--ignore-reinstalled}'[Ignore the installed packages (reinstalling instead)]' \
+                '(--no-deps --no-dependencies)'{--no-deps,--no-dependencies}'[Ignore package dependencies]' \
+                '(--no-install)--no-install[only download packages]' \
+                '(--no-download)--no-download[only install downloaded packages]' \
+                '(--install-option)--install-option=[extra arguments to be supplied to the setup.py]::' \
+                '(--global-option)--global-option=[Extra global options to be supplied to the setup.py]::' \
+                '(--user)--user[Install using user scheme]' \
+                '(--egg)--egg[Install packages as eggs]' \
+                '(--root)--root[Install everything relative to this alternate root directory]: :_files -/'\
+                '(--compile)--compile[Compile py files to pyc]' \
+                '(--no-compile)--no-compile[Do not compile py files to pyc]' \
+                '(--no-use-wheel)--no-use-wheel[Do not find and prefer wheel archives when searching indexes]' \
+                '(--pre)--pre[Include pre-release and development versions]' \
+                '(--no-clean)--no-clean[Don not clean up build directories]' \
+                $package_index_args \
+                $general_args \
+                '1: :->packages' &&  return 0
+
+            if [[ "$state" == packages ]]; then
+                _pip_all
+                _wanted piplist expl 'packages' compadd -a piplist
+            fi ;;
+
+        uninstall)
+            _arguments \
+                '(-r --requirement)'{-r,--requirement}'[Uninstall all packages from requirements file]:File:_files' \
+                '(-y --yes)'{-y,--yes}'[Do not ask for confirmation of uninstall deletions]' \
+                $general_args \
+                '1: :->packages' &&  return 0
+
+            if [[ "$state" == packages ]]; then
+                _pip_installed
+                _wanted installed_pkgs expl 'installed packages' compadd -a installed_pkgs
+            fi
+            ;;
+
+        freeze)
+            _arguments \
+                '(-r --requirement)'{-r,--requirement}'[Use the order in the given requirements file]:File:_files' \
+                '(-f --find-links)'{-f,--find-links=}'[URL for finding packages]::' \
+                '(-l --local)'{-l,--local}'[Do not output globally-installed packages when in virtualenv]' \
+                '(--user)--user[Only output packages installed in user-site]' \
+                $general_args
+            ;;
+
+        list)
+            _arguments \
+                '(-o --outdated)'{-o,--outdated}'[List outdated packages (excluding editables)]' \
+                '(-u --uptodate)'{-u,--uptodate}'[List uptodate packages (excluding editables)]' \
+                '(-e --editable)'{-e,--editable}'[List editable projects]' \
+                '(-l --local)'{-l,--local}'[Do not list globally-installed packages when in virtualenv]' \
+                '(--user)--user[Only output packages installed in user-site]' \
+                '(--pre)--pre[Include pre-release and development versions]' \
+                $package_index_args \
+                $general_args
+            ;;
+
+        show)
+            _arguments \
+                '(-f --files)'{-f,--files}'[Show full list of installed files for each package]' \
+                $general_args \
+                '1: :->packages' &&  return 0
+
+            if [[ "$state" == packages ]]; then
+                _pip_installed
+                _wanted installed_pkgs expl 'installed packages' compadd -a installed_pkgs
+            fi
+            ;;
+
+        search)
+            _arguments \
+                '(--index)--index=[base URL of Python Package Index]::' \
+                $general_args \
+                '1: :->query'
+            ;;
+
+        wheel)
+            _arguments \
+                '(-w --wheel-dir)'{-w,--wheel-dir}'[Build wheels into <dir>]: :_files -/'\
+                '(--no-use-wheel)--no-use-wheel[Do not find and prefer wheel archives when searching indexes]' \
+                '(--no-binary)--no-binary=[Do no use binary packages]' \
+                '(--only-binary)--only-binary=[Do no use source packages]' \
+                '(--build-option)--build-option=[Extra args to be supplied to "setup.py bdist_wheel"]::' \
+                '(-c --constraint)'{-c,--constraint}'[Constrain version susing the given constraints file]: :_files -/'\
+                '(-e --editable)'{-e,--editable}'[path of or url to source to link to instead of installing.]: :_files -/'\
+                '(-r --requirement)'{-r,--requirement}'[Install from given requirements file]:File:_files' \
+                '(--src)--src[Dir to check out editable projects into]::_files -/' \
+                '(--no-deps)--no-deps[Do not install package dependencies]' \
+                '(-b --build)'{-b,--build}'[Directory to unpack packages into and build in]: :_files -/'\
+                '(--global-option)--global-option=[Extra global options to be supplied to the setup.py]::' \
+                '(--pre)--pre[Include pre-release and development versions]' \
+                '(--no-clean)--no-clean[Don not clean up build directories]' \
+                $package_index_args \
+                $general_args \
+                '*:files:_files'
+            ;;
+    esac
+}
+
+(( $+functions[_pip_clean_packages] )) ||
+_pip_clean_packages() {
+    sed -n '/<a href/ s/.*>\([^<]\{1,\}\).*/\1/p'
+}
+
+(( $+functions[_pip_cache_packages] )) ||
+_pip_cache_packages() {
+    if [[ ! -d ${ZSH_PIP_CACHE_FILE:h} ]]; then
+        mkdir -p ${ZSH_PIP_CACHE_FILE:h}
+    fi
+
+    if [[ ! -f $ZSH_PIP_CACHE_FILE ]]; then
+        echo -n "(...caching package index...)"
+        tmp_cache=/tmp/zsh_tmp_cache
+        touch $tmp_cache
+        for index in "$ZSH_PIP_INDEXES[@]" ; do
+            # well... I've already got two problems
+            curl $index 2>/dev/null | _pip_clean_packages >> $tmp_cache
+        done
+        sort $tmp_cache | uniq | tr '\n' ' ' > $ZSH_PIP_CACHE_FILE
+        rm $tmp_cache
+    fi
+}
+
+(( $+functions[_pip_all] )) ||
+_pip_all() {
+    # we cache the list of packages (originally from the macports plugin)
+    if (( ! $+piplist )); then
+        _pip_cache_packages
+        piplist=($(cat $ZSH_PIP_CACHE_FILE))
+    fi
+}
+
+(( $+functions[_pip_installed] )) ||
+_pip_installed() {
+    installed_pkgs=(`pip freeze | cut -d '=' -f 1`)
+}
+
+_pip "$@"
+return $?

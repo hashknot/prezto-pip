@@ -1,0 +1,5 @@
+zstyle -s ':prezto:module:pip' cache-file 'ZSH_PIP_CACHE_FILE' \
+    || ZSH_PIP_CACHE_FILE=~/.pip/zsh-cache
+
+rm $ZSH_PIP_CACHE_FILE
+unset piplist
