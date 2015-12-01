@@ -7,7 +7,7 @@ if (( ! ( $+commands[pip]     || \
           $+commands[pip3]    || \
           $+commands[pip-3.2] || \
           $+commands[pip-3.3] || \
-          $+commands[pip-3.4] || \
+          $+commands[pip-3.4]    \
        )
     )); then
     return 1
