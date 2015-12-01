@@ -1,8 +1,8 @@
-Pip
-===
+prezto-pip
+==========
 
-Provides autocompletion support for [Pip][1].
-Based on [oh-my-zsh][2] pip autocompletion [plugin][2].
+Provides [prezto][1] autocompletion support for [Pip][2].
+Based on [oh-my-zsh][3] pip autocompletion [plugin][4].
 
 Functions
 ---------
@@ -15,6 +15,7 @@ Authors
 
   - [Jitesh Kamble](https://github.com/hashknot)
 
-[1]: https://pip.readthedocs.org/
-[2]: http://ohmyz.sh
-[3]: https://github.com/robbyrussell/oh-my-zsh/tree/master/plugins/pip
+[1]: https://github.com/sorin-ionescu/prezto
+[2]: https://pip.readthedocs.org/
+[3]: http://ohmyz.sh
+[4]: https://github.com/robbyrussell/oh-my-zsh/tree/master/plugins/pip
